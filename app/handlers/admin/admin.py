@@ -40,10 +40,11 @@ async def admin_command(message: Message, bot: Bot):
     # Получаем актуальные данные
     total_users = await db.get_users_count()
     active_users = await db.get_active_users_count()
-    
+    transcriptions_count = await db.get_transcriptions_count()
+
     # Форматируем время последнего запуска
     last_restart = stats.last_restart.strftime("%d.%m.%Y %H:%M:%S")
-    
+
     # Формируем сообщение со статистикой
     text = f"""
 🔧 <b>Админская панель</b>
@@ -51,6 +52,7 @@ async def admin_command(message: Message, bot: Bot):
 📊 <b>Статистика бота:</b>
 👥 Всего пользователей: <b>{total_users}</b>
 ✅ Активных пользователей: <b>{active_users}</b>
+🎙 Расшифровок выполнено: <b>{transcriptions_count}</b>
 🟢 Статус: <b>{stats.status}</b>
 🕐 Последний запуск: <b>{last_restart}</b>
 

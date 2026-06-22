@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     local_api_host: str = Field("telegram-bot-api", alias="LOCAL_API_HOST")
     local_api_port: int = Field(8081, alias="LOCAL_API_PORT")
 
+    # Local speech-to-text service settings
+    transcriber_url: str = Field("http://transcriber:8001", alias="TRANSCRIBER_URL")
+    transcriber_timeout: int = Field(300, alias="TRANSCRIBER_TIMEOUT")
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

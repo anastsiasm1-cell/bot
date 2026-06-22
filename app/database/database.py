@@ -8,7 +8,7 @@ from sqlalchemy import select, func, update
 from loguru import logger
 
 from app.config import settings
-from .models import Base, User, BotStats, MigrationHistory
+from .models import Base, User, BotStats, MigrationHistory, TranscriptionLog
 from .migrations import MigrationManager
 
 
@@ -144,6 +144,30 @@ class Database:
             result = await session.execute(select(BotStats).order_by(BotStats.id.desc()).limit(1))
             return result.scalar_one_or_none()
     
+    async def log_transcription(self, user_id: int, media_type: str,
+                                text_length: Optional[int] = None,
+                                status: str = "success") -> TranscriptionLog:
+        """Логирование расшифровки голосового/аудио/видео сообщения"""
+        async with self.session_maker() as session:
+            log = TranscriptionLog(
+                user_id=user_id,
+                media_type=media_type,
+                text_length=text_length,
+                status=status
+            )
+            session.add(log)
+            await session.commit()
+            await session.refresh(log)
+            return log
+
+    async def get_transcriptions_count(self) -> int:
+        """Получение количества успешных расшифровок"""
+        async with self.session_maker() as session:
+            result = await session.execute(
+                select(func.count(TranscriptionLog.id)).where(TranscriptionLog.status == "success")
+            )
+            return result.scalar() or 0
+
     async def get_migration_history(self) -> List[MigrationHistory]:
         """Получение истории миграций"""
         async with self.session_maker() as session:

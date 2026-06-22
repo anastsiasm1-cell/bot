@@ -217,6 +217,10 @@ logs-db: check-docker
 logs-redis: check-docker
     {{docker_compose}} logs -f redis
 
+# Show logs from transcriber (speech-to-text) service
+logs-transcriber: check-docker
+    {{docker_compose}} logs -f transcriber
+
 # ═══════════════════════════════════════════════════════════════
 #                       SHELL ACCESS
 # ═══════════════════════════════════════════════════════════════
@@ -249,6 +253,11 @@ restart: check-docker
 restart-bot: check-docker
     @echo "🔄 Restarting bot service..."
     {{docker_compose}} restart bot
+
+# Restart transcriber (speech-to-text) service
+restart-transcriber: check-docker
+    @echo "🔄 Restarting transcriber service..."
+    {{docker_compose}} restart transcriber
 
 # ═══════════════════════════════════════════════════════════════
 #                     CLEANUP COMMANDS

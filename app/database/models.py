@@ -46,6 +46,22 @@ class BotStats(Base):
         return f"<BotStats(total_users={self.total_users}, status={self.status})>"
 
 
+class TranscriptionLog(Base):
+    """Модель лога расшифровки голосовых/аудио/видео сообщений"""
+
+    __tablename__ = "transcription_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    media_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    text_length: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="success")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    def __repr__(self) -> str:
+        return f"<TranscriptionLog(user_id={self.user_id}, media_type={self.media_type}, status={self.status})>"
+
+
 class MigrationHistory(Base):
     """Модель для отслеживания примененных миграций"""
     

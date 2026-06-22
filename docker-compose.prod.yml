@@ -9,12 +9,15 @@ services:
       - .env.prod
     environment:
       - ENV=production
+      - TRANSCRIBER_URL=http://transcriber:8001
     restart: always
     depends_on:
       redis:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      transcriber:
+        condition: service_started
     networks:
       - bot_network
     deploy:
@@ -25,6 +28,41 @@ services:
         reservations:
           memory: 256M
           cpus: '0.25'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Local Speech-to-Text Service (faster-whisper, Production)
+  transcriber:
+    build:
+      context: ./transcriber
+    container_name: transcrib_hglobalcom_bot_transcriber_prod
+    environment:
+      - WHISPER_MODEL_SIZE=${WHISPER_MODEL_SIZE:-small}
+      - WHISPER_COMPUTE_TYPE=${WHISPER_COMPUTE_TYPE:-int8}
+      - WHISPER_LANGUAGE=${WHISPER_LANGUAGE:-ru}
+    volumes:
+      - whisper_models:/models
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - bot_network
+    deploy:
+      resources:
+        # При WHISPER_MODEL_SIZE=medium/large лимиты нужно увеличить (4G+/6G+)
+        limits:
+          memory: 2G
+          cpus: '1.5'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
     logging:
       driver: "json-file"
       options:
@@ -107,4 +145,6 @@ volumes:
   redis_data:
     driver: local
   postgres_data:
+    driver: local
+  whisper_models:
     driver: local

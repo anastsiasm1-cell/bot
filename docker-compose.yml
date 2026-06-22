@@ -9,6 +9,7 @@ services:
       - .env
     environment:
       - ENV=development
+      - TRANSCRIBER_URL=http://transcriber:8001
     volumes:
       # Монтируем код для live reload в разработке
       - ./app:/app/app:ro
@@ -20,6 +21,29 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      transcriber:
+        condition: service_started
+    networks:
+      - bot_network
+
+  # Local Speech-to-Text Service (faster-whisper)
+  transcriber:
+    build:
+      context: ./transcriber
+    container_name: transcrib_hglobalcom_bot_transcriber_dev
+    environment:
+      - WHISPER_MODEL_SIZE=${WHISPER_MODEL_SIZE:-small}
+      - WHISPER_COMPUTE_TYPE=${WHISPER_COMPUTE_TYPE:-int8}
+      - WHISPER_LANGUAGE=${WHISPER_LANGUAGE:-ru}
+    volumes:
+      - whisper_models:/models
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - bot_network
 
@@ -115,3 +139,4 @@ volumes:
   postgres_data:
   pgadmin_data:
   telegram_bot_api_data:
+  whisper_models:

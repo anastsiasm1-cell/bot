@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Aiogram Starter Kit - a Telegram bot template built on Aiogram v3.20.0 with Docker, PostgreSQL, Redis, and an admin panel with broadcast functionality.
+Aiogram Starter Kit - a Telegram bot template built on Aiogram v3.20.0 with Docker, PostgreSQL, Redis, an admin panel with broadcast functionality, and automatic local speech-to-text transcription for voice/audio/video messages.
 
 ## Common Commands
 
@@ -12,11 +12,13 @@ The project supports both `just` (cross-platform) and `make` (macOS/Linux). Use 
 
 ### Development
 ```bash
-just dev           # Start with live logs
-just dev-d         # Start in background
-just stop          # Stop all services
-just restart-bot   # Restart only the bot container
-just logs-bot      # View bot logs
+just dev                 # Start with live logs
+just dev-d               # Start in background
+just stop                # Stop all services
+just restart-bot         # Restart only the bot container
+just logs-bot            # View bot logs
+just logs-transcriber    # View speech-to-text service logs
+just restart-transcriber # Restart only the transcriber container
 ```
 
 ### Database
@@ -106,6 +108,13 @@ Optional support for Local Bot API Server (2GB file uploads instead of 50MB):
 - Bot initialization in `app/main.py`: uses `TelegramAPIServer` and `AiohttpSession` when enabled
 - Admin UI in `app/handlers/admin/api_settings.py`: status check, mode switching instructions
 - Docker service `telegram-bot-api` with profile `local-api` in `docker-compose.yml`
+
+### Speech-to-Text Transcription
+Any voice, audio, video, or video note message sent to the bot is automatically transcribed to text — no paid cloud APIs involved:
+- `transcriber/` - standalone FastAPI service running `faster-whisper` (CPU, `int8`) on its own Docker container (`transcriber` service in `docker-compose.yml`/`docker-compose.prod.yml`), so the heavy ML dependency and memory usage stay isolated from the 512MB-limited `bot` container in production.
+- `app/services/transcription.py` - `TranscriptionService` downloads the Telegram file via `bot.download()` and POSTs it to the transcriber service over the internal Docker network (`TRANSCRIBER_URL`).
+- `app/handlers/transcription.py` - catches `F.voice | F.audio | F.video | F.video_note`, replies with the transcribed text (split via `app/utils/text.py:split_text` to respect Telegram's 4096-char limit), and logs each attempt via `db.log_transcription()` (`transcription_logs` table).
+- Model size/compute type configurable via `WHISPER_MODEL_SIZE`/`WHISPER_COMPUTE_TYPE` env vars (default `small`/`int8`); raise the `transcriber` resource limits in `docker-compose.prod.yml` if switching to a larger model.
 
 ## Language
 
