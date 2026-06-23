@@ -8,8 +8,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     HF_HUB_DISABLE_XET=1
 
 # ffmpeg подстраховывает декодирование видео-контейнеров,
-# которые встроенный в faster-whisper PyAV может не поддержать
-RUN apt-get update && apt-get install -y \
+# которые встроенный в faster-whisper PyAV может не поддержать;
+# --no-install-recommends исключает GTK/X11/PulseAudio и прочий GUI-балласт,
+# который apt иначе тянет вместе с ffmpeg (экономит ~650MB и время сборки)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     curl \
     && rm -rf /var/lib/apt/lists/*

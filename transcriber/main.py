@@ -12,6 +12,7 @@ from faster_whisper import WhisperModel
 MODEL_SIZE = os.environ.get("WHISPER_MODEL_SIZE", "small")
 COMPUTE_TYPE = os.environ.get("WHISPER_COMPUTE_TYPE", "int8")
 LANGUAGE = os.environ.get("WHISPER_LANGUAGE", "ru")
+BEAM_SIZE = int(os.environ.get("WHISPER_BEAM_SIZE", "5"))
 
 app = FastAPI(title="Local Speech-to-Text Service")
 
@@ -19,7 +20,9 @@ model = WhisperModel(MODEL_SIZE, device="cpu", compute_type=COMPUTE_TYPE)
 
 
 def _run_transcription(path: str) -> str:
-    segments, _info = model.transcribe(path, language=LANGUAGE, vad_filter=True)
+    segments, _info = model.transcribe(
+        path, language=LANGUAGE, vad_filter=True, beam_size=BEAM_SIZE
+    )
     return "".join(segment.text for segment in segments).strip()
 
 

@@ -4,12 +4,12 @@
 from html import escape
 
 from aiogram import Router, F
-from aiogram.types import Message
+from aiogram.types import BufferedInputFile, Message
 from loguru import logger
 
 from app.database import db
 from app.services import transcription_service, TranscriptionError
-from app.utils import split_text
+from app.utils import build_transcript_docx, split_text
 
 router = Router()
 
@@ -55,5 +55,10 @@ async def transcribe_media(message: Message):
     await status_message.edit_text(f"📝 <b>Расшифровка:</b>\n\n{escape(chunks[0])}")
     for chunk in chunks[1:]:
         await message.answer(escape(chunk))
+
+    docx_buffer = build_transcript_docx(text)
+    await message.answer_document(
+        BufferedInputFile(docx_buffer.read(), filename="Расшифровка.docx")
+    )
 
     await db.log_transcription(message.from_user.id, media_type, text_length=len(text), status="success")

@@ -35,6 +35,7 @@ services:
       - WHISPER_MODEL_SIZE=${WHISPER_MODEL_SIZE:-small}
       - WHISPER_COMPUTE_TYPE=${WHISPER_COMPUTE_TYPE:-int8}
       - WHISPER_LANGUAGE=${WHISPER_LANGUAGE:-ru}
+      - WHISPER_BEAM_SIZE=${WHISPER_BEAM_SIZE:-5}
     volumes:
       - whisper_models:/models
     restart: unless-stopped
