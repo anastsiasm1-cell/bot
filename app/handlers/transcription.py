@@ -14,6 +14,10 @@ from app.utils import build_transcript_docx, split_text
 router = Router()
 
 
+def _is_media_document(mime: str | None) -> bool:
+    return bool(mime and (mime.startswith("audio/") or mime.startswith("video/")))
+
+
 def _get_media_info(message: Message):
     """Определяет file_id и тип медиа для входящего сообщения"""
     if message.voice:
@@ -24,10 +28,15 @@ def _get_media_info(message: Message):
         return message.video.file_id, "video"
     if message.video_note:
         return message.video_note.file_id, "video_note"
+    if message.document and _is_media_document(message.document.mime_type):
+        return message.document.file_id, "document"
     return None, None
 
 
-@router.message(F.voice | F.audio | F.video | F.video_note)
+@router.message(
+    F.voice | F.audio | F.video | F.video_note
+    | (F.document & F.document.mime_type.func(_is_media_document))
+)
 async def transcribe_media(message: Message):
     """Автоматически распознаёт речь в голосовых/аудио/видео сообщениях"""
     file_id, media_type = _get_media_info(message)
