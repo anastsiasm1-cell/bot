@@ -2,9 +2,10 @@
 Хендлер автоматической расшифровки голосовых/аудио/видео сообщений
 """
 from html import escape
+from pathlib import Path
 
 from aiogram import Router, F
-from aiogram.types import BufferedInputFile, Message
+from aiogram.types import BufferedInputFile, Document, Message
 from loguru import logger
 
 from app.database import db
@@ -13,9 +14,23 @@ from app.utils import build_transcript_docx, split_text
 
 router = Router()
 
+# Расширения файлов, которые пытаемся расшифровать даже без корректного MIME-типа.
+# ".null" — Telegram ставит это расширение для голосовых/аудио файлов без метаданных.
+_MEDIA_EXTENSIONS = frozenset({
+    ".mp3", ".ogg", ".oga", ".opus", ".wav", ".flac", ".aac", ".m4a", ".wma", ".aiff",
+    ".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".m4v", ".3gp", ".webm",
+    ".null",
+})
 
-def _is_media_document(mime: str | None) -> bool:
-    return bool(mime and (mime.startswith("audio/") or mime.startswith("video/")))
+
+def _is_media_document(doc: Document | None) -> bool:
+    if not doc:
+        return False
+    if doc.mime_type and (doc.mime_type.startswith("audio/") or doc.mime_type.startswith("video/")):
+        return True
+    if doc.file_name:
+        return Path(doc.file_name).suffix.lower() in _MEDIA_EXTENSIONS
+    return False
 
 
 def _get_media_info(message: Message):
@@ -28,14 +43,14 @@ def _get_media_info(message: Message):
         return message.video.file_id, "video"
     if message.video_note:
         return message.video_note.file_id, "video_note"
-    if message.document and _is_media_document(message.document.mime_type):
+    if _is_media_document(message.document):
         return message.document.file_id, "document"
     return None, None
 
 
 @router.message(
     F.voice | F.audio | F.video | F.video_note
-    | (F.document & F.document.mime_type.func(_is_media_document))
+    | F.document.func(_is_media_document)
 )
 async def transcribe_media(message: Message):
     """Автоматически распознаёт речь в голосовых/аудио/видео сообщениях"""
