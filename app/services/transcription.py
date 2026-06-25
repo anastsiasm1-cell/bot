@@ -3,6 +3,7 @@
 """
 import aiohttp
 from aiogram import Bot
+from aiogram.exceptions import TelegramBadRequest
 from loguru import logger
 
 from app.config import settings
@@ -30,7 +31,12 @@ class TranscriptionService:
         Raises:
             TranscriptionError: если сервис распознавания недоступен или вернул ошибку
         """
-        file_bytes = await bot.download(file_id)
+        try:
+            file_bytes = await bot.download(file_id)
+        except TelegramBadRequest as exc:
+            if "file is too big" in str(exc):
+                raise TranscriptionError("file_too_big") from exc
+            raise TranscriptionError(str(exc)) from exc
 
         timeout = aiohttp.ClientTimeout(total=settings.transcriber_timeout)
         form = aiohttp.FormData()

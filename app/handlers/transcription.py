@@ -64,9 +64,15 @@ async def transcribe_media(message: Message):
         text = await transcription_service.transcribe_telegram_file(message.bot, file_id)
     except TranscriptionError as exc:
         logger.error(f"Transcription failed for user {message.from_user.id}: {exc}")
-        await status_message.edit_text(
-            "❌ Не удалось распознать речь. Сервис расшифровки временно недоступен, попробуйте позже."
-        )
+        if "file_too_big" in str(exc):
+            await status_message.edit_text(
+                "❌ Файл слишком большой. Telegram позволяет расшифровывать файлы до 20 МБ. "
+                "Попробуйте отправить более короткое видео или сжать файл."
+            )
+        else:
+            await status_message.edit_text(
+                "❌ Не удалось распознать речь. Сервис расшифровки временно недоступен, попробуйте позже."
+            )
         await db.log_transcription(message.from_user.id, media_type, status="error")
         return
 
