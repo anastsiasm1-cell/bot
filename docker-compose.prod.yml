@@ -9,7 +9,7 @@ services:
       - .env.prod
     environment:
       - ENV=production
-      - TRANSCRIBER_URL=http://transcriber:8001
+      - TRANSCRIBER_URL=http://127.0.0.1:8001
     restart: always
     depends_on:
       redis:
@@ -18,8 +18,7 @@ services:
         condition: service_healthy
       transcriber:
         condition: service_started
-    networks:
-      - bot_network
+    network_mode: host
     deploy:
       resources:
         limits:
@@ -46,6 +45,8 @@ services:
       - WHISPER_BEAM_SIZE=${WHISPER_BEAM_SIZE:-5}
     volumes:
       - whisper_models:/models
+    ports:
+      - "127.0.0.1:8001:8001"
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8001/health"]
@@ -75,6 +76,8 @@ services:
     image: redis:7-alpine
     container_name: transcrib_hglobalcom_bot_redis_prod
     restart: always
+    ports:
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     command: >
@@ -122,6 +125,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "127.0.0.1:5432:5432"
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
