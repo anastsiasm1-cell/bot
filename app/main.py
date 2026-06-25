@@ -36,6 +36,9 @@ async def check_local_api_available() -> bool:
 async def setup_bot() -> tuple[Bot, Dispatcher]:
     """Настройка бота и диспетчера"""
 
+    # Длинный таймаут для сетей с задержкой на новые TCP-соединения (Timeweb и др.)
+    _timeout = aiohttp.ClientTimeout(total=None, connect=120, sock_connect=120, sock_read=40)
+
     # Настройка session в зависимости от режима API
     session = None
     if settings.use_local_api:
@@ -44,13 +47,16 @@ async def setup_bot() -> tuple[Bot, Dispatcher]:
 
         if await check_local_api_available():
             session = AiohttpSession(
-                api=TelegramAPIServer.from_base(settings.local_api_url, is_local=True)
+                api=TelegramAPIServer.from_base(settings.local_api_url, is_local=True),
+                timeout=_timeout,
             )
             logger.info("✅ Local Bot API connected")
             logger.info(f"📁 File upload limit: {settings.file_upload_limit_mb} MB")
         else:
             logger.warning("⚠️ Local Bot API not available, using Public API")
-    else:
+
+    if session is None:
+        session = AiohttpSession(timeout=_timeout)
         logger.info("🌍 Using Public Bot API")
         logger.info(f"📁 File upload limit: {settings.file_upload_limit_mb} MB")
 
