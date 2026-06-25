@@ -52,6 +52,8 @@ class TranscriptionService:
                 async with session.post(
                     f"{settings.transcriber_url}/transcribe", data=form
                 ) as response:
+                    if response.status == 503:
+                        raise TranscriptionError("service_busy")
                     if response.status != 200:
                         body = await response.text()
                         logger.error(f"Transcriber service error {response.status}: {body}")
