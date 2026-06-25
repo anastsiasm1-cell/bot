@@ -128,18 +128,22 @@ async def main() -> None:
     dp.startup.register(on_startup)
     dp.shutdown.register(on_shutdown)
     
-    try:
-        # Запускаем polling
-        await dp.start_polling(
-            bot,
-            allowed_updates=dp.resolve_used_update_types()
-        )
-    except KeyboardInterrupt:
-        logger.info("👋 Bot stopped by user")
-    except Exception as e:
-        logger.error(f"💥 Unexpected error: {e}")
-    finally:
-        await bot.session.close()
+    while True:
+        try:
+            # Запускаем polling с коротким таймаутом для устойчивости к обрывам соединения
+            await dp.start_polling(
+                bot,
+                allowed_updates=dp.resolve_used_update_types(),
+                polling_timeout=25,
+            )
+            break  # нормальная остановка
+        except KeyboardInterrupt:
+            logger.info("👋 Bot stopped by user")
+            break
+        except Exception as e:
+            logger.error(f"💥 Unexpected error: {e}. Restarting polling in 5s...")
+            await asyncio.sleep(5)
+    await bot.session.close()
 
 
 if __name__ == "__main__":
